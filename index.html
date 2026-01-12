@@ -148,4 +148,135 @@
     </div>
 
     <div id="learningModal" class="modal-overlay" onclick="closeModal(event)">
-        <div
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <button class="btn-close" onclick="closeModal()">×</button>
+            <div id="mWord" class="modal-word"></div>
+            <div id="mReading" class="modal-reading"></div>
+            <div class="modal-meaning-box">
+                <div id="mMeaning" class="modal-meaning"></div>
+                <div id="mDetail" class="modal-detail"></div>
+            </div>
+            <a id="mDictLink" href="#" target="_blank" class="btn-dict">네이버 사전에서 더보기 📗</a>
+        </div>
+    </div>
+
+    <script>
+        // ========================================================
+        // 프론트엔드 JS (API 키 없음! 안전함!)
+        // ========================================================
+
+        let selectedImageBase64 = null;
+        let selectedImageMimeType = null;
+
+        function handleImageSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('imagePreview').src = e.target.result;
+                document.getElementById('previewContainer').style.display = 'block';
+                selectedImageBase64 = e.target.result.split(',')[1];
+                selectedImageMimeType = file.type;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearImage() {
+            document.getElementById('imageInput').value = "";
+            document.getElementById('previewContainer').style.display = 'none';
+            selectedImageBase64 = null;
+        }
+
+        async function startTranslate() {
+            const lyricText = document.getElementById('lyricInput').value.trim();
+            const resultDiv = document.getElementById('resultContainer');
+            const loading = document.getElementById('loading');
+            const btnTrans = document.getElementById('btnTrans');
+
+            if (!lyricText && !selectedImageBase64) {
+                alert("가사를 입력하거나 이미지를 업로드해주세요."); return;
+            }
+
+            resultDiv.innerHTML = "";
+            loading.style.display = "block";
+            btnTrans.disabled = true;
+
+            try {
+                // [핵심] 내 Vercel 서버 API로 요청 보냄 (키는 서버에 숨겨져 있음)
+                const response = await fetch('/api/translate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text: lyricText,
+                        image: selectedImageBase64,
+                        mimeType: selectedImageMimeType
+                    })
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.error || "서버 오류 발생");
+                }
+                
+                const json = await response.json();
+
+                // 결과 렌더링 (단어 클릭 기능 포함)
+                json.forEach(line => {
+                    const card = document.createElement('div');
+                    card.className = 'line-card';
+
+                    // 1. 일본어 문장 (클릭 가능 토큰들)
+                    const japDiv = document.createElement('div');
+                    japDiv.className = 'line-japanese';
+                    line.tokens.forEach(token => {
+                        const span = document.createElement('span');
+                        span.className = 'word-token';
+                        span.textContent = token.text;
+                        span.onclick = () => openModal(token); // 클릭 시 모달 열기
+                        japDiv.appendChild(span);
+                    });
+
+                    // 2. 전체 발음 라인
+                    const pronDiv = document.createElement('div');
+                    pronDiv.className = 'line-pronunciation';
+                    pronDiv.textContent = `[${line.fullPronunciation}]`;
+
+                    // 3. 한국어 번역 라인
+                    const korDiv = document.createElement('div');
+                    korDiv.className = 'line-translation';
+                    korDiv.textContent = line.lineTranslation;
+
+                    card.appendChild(japDiv);
+                    card.appendChild(pronDiv);
+                    card.appendChild(korDiv);
+                    resultDiv.appendChild(card);
+                });
+
+            } catch (e) {
+                console.error(e);
+                alert("오류 발생: " + e.message);
+            } finally {
+                loading.style.display = "none";
+                btnTrans.disabled = false;
+            }
+        }
+
+        // --- 모달 관련 함수 (디자인 복구됨) ---
+        const modal = document.getElementById('learningModal');
+        function openModal(token) {
+            document.getElementById('mWord').textContent = token.text;
+            document.getElementById('mReading').textContent = token.reading || "";
+            document.getElementById('mMeaning').textContent = token.meaning || "뜻 없음";
+            document.getElementById('mDetail').textContent = token.detail || "";
+            const dictUrl = `https://ja.dict.naver.com/#/search?query=${encodeURIComponent(token.text)}`;
+            document.getElementById('mDictLink').href = dictUrl;
+            modal.classList.add('active');
+        }
+        function closeModal(event) {
+            if (!event || event.target === modal || event.target.className === 'btn-close') {
+                modal.classList.remove('active');
+            }
+        }
+    </script>
+</body>
+</html>
