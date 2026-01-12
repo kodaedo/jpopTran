@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>J-Lyric Perfect | Vercel Edition</title>
+    <title>J-Lyric Perfect</title>
     <style>
-        /* --- 복구된 전체 디자인 CSS --- */
+        /* --- 디자인 CSS (변경 없음) --- */
         :root {
             --primary-color: #4285F4;
             --secondary-color: #34A853;
@@ -24,7 +24,6 @@
         h1 { font-size: 2.2rem; margin-bottom: 0.5rem; color: #333; }
         p.subtitle { color: #666; }
 
-        /* 입력 섹션 스타일 */
         .input-box {
             background: white; padding: 1.5rem; border-radius: 16px;
             box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 1rem;
@@ -56,7 +55,6 @@
         .main-btn:hover { background-color: #3367d6; transform: translateY(-2px); }
         .main-btn:disabled { background-color: #ccc; cursor: not-allowed; transform: none; box-shadow: none; }
 
-        /* --- 결과 화면 스타일 --- */
         .result-container { display: flex; flex-direction: column; gap: 1.5rem; }
         
         .line-card {
@@ -66,7 +64,6 @@
         }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* 1. 일본어 원문 (클릭 가능 토큰) */
         .line-japanese {
             font-size: 1.4rem; font-weight: bold; margin-bottom: 6px; line-height: 1.6;
             display: flex; flex-wrap: wrap; gap: 4px; 
@@ -80,15 +77,10 @@
             border-bottom: 2px solid var(--primary-color);
         }
 
-        /* 2. 전체 발음 줄 */
-        .line-pronunciation {
-            font-size: 1rem; color: #ea4335; margin-bottom: 8px; font-style: italic; font-weight: 500;
-        }
-
-        /* 3. 한국어 번역 줄 */
+        .line-pronunciation { font-size: 1rem; color: #ea4335; margin-bottom: 8px; font-style: italic; font-weight: 500; }
         .line-translation { color: #555; font-size: 1rem; padding-top: 8px; border-top: 1px dashed #eee; }
 
-        /* --- 모달 (팝업창) 스타일 복구 --- */
+        /* 모달 스타일 */
         .modal-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: var(--modal-bg); z-index: 1000; align-items: center; justify-content: center;
@@ -123,7 +115,7 @@
 
     <header>
         <h1>J-Lyric Perfect 🎤</h1>
-        <p class="subtitle">발음 보며 노래하고, 클릭해서 공부하고! (안전한 Vercel 버전)</p>
+        <p class="subtitle">발음 보며 노래하고, 클릭해서 공부하고!</p>
     </header>
 
     <div class="container">
@@ -141,7 +133,7 @@
         </div>
 
         <div id="loading" class="loading">
-            <div class="spinner"></div><span>AI가 안전한 서버에서 분석 중입니다... 🎧</span>
+            <div class="spinner"></div><span>AI가 분석 중입니다... 🎧</span>
         </div>
 
         <div id="resultContainer" class="result-container"></div>
@@ -162,7 +154,7 @@
 
     <script>
         // ========================================================
-        // 프론트엔드 JS (API 키 없음! 안전함!)
+        // [Frontend Script]
         // ========================================================
 
         let selectedImageBase64 = null;
@@ -185,8 +177,10 @@
             document.getElementById('imageInput').value = "";
             document.getElementById('previewContainer').style.display = 'none';
             selectedImageBase64 = null;
+            selectedImageMimeType = null;
         }
 
+        // [핵심] 번역 시작 함수 (여기 있어야 버튼이 작동합니다!)
         async function startTranslate() {
             const lyricText = document.getElementById('lyricInput').value.trim();
             const resultDiv = document.getElementById('resultContainer');
@@ -203,6 +197,7 @@
             btnTrans.disabled = true;
 
             try {
+                // 백엔드 호출
                 const response = await fetch('/api/translate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -213,56 +208,53 @@
                     })
                 });
 
-                // [수정된 부분] 무조건 JSON으로 변환하지 않고, 텍스트인지 먼저 확인
-                const responseText = await response.text(); 
+                // [에러 처리 강화] 텍스트로 먼저 받아서 JSON인지 확인
+                const textResponse = await response.text();
+                let json;
                 
                 try {
-                    // 텍스트를 JSON으로 변환 시도
-                    const json = JSON.parse(responseText);
+                    json = JSON.parse(textResponse);
+                } catch (e) {
+                    // JSON이 아니라면 서버가 에러 페이지(HTML/Text)를 보낸 것임
+                    console.error("서버 응답 원본:", textResponse);
+                    throw new Error("서버 설정 오류입니다. (API 키 확인 필요)\n서버 메시지: " + textResponse.substring(0, 100));
+                }
 
-                    if (!response.ok) {
-                        throw new Error(json.error || "서버 오류");
+                if (!response.ok) {
+                    throw new Error(json.error || "서버 오류 발생");
+                }
+                
+                // 결과 화면 렌더링
+                json.forEach(line => {
+                    const card = document.createElement('div');
+                    card.className = 'line-card';
+
+                    const japDiv = document.createElement('div');
+                    japDiv.className = 'line-japanese';
+                    
+                    if (line.tokens && Array.isArray(line.tokens)) {
+                        line.tokens.forEach(token => {
+                            const span = document.createElement('span');
+                            span.className = 'word-token';
+                            span.textContent = token.text;
+                            span.onclick = function() { openModal(token); };
+                            japDiv.appendChild(span);
+                        });
                     }
 
-                    // 변환 성공 시 렌더링
-                    json.forEach(line => {
-                        const card = document.createElement('div');
-                        card.className = 'line-card';
+                    const pronDiv = document.createElement('div');
+                    pronDiv.className = 'line-pronunciation';
+                    pronDiv.textContent = line.fullPronunciation ? `[${line.fullPronunciation}]` : "";
 
-                        const japDiv = document.createElement('div');
-                        japDiv.className = 'line-japanese';
-                        
-                        if (line.tokens && Array.isArray(line.tokens)) {
-                            line.tokens.forEach(token => {
-                                const span = document.createElement('span');
-                                span.className = 'word-token';
-                                span.textContent = token.text;
-                                span.onclick = function() { openModal(token); };
-                                japDiv.appendChild(span);
-                            });
-                        } else {
-                            japDiv.textContent = "텍스트 없음";
-                        }
+                    const korDiv = document.createElement('div');
+                    korDiv.className = 'line-translation';
+                    korDiv.textContent = line.lineTranslation;
 
-                        const pronDiv = document.createElement('div');
-                        pronDiv.className = 'line-pronunciation';
-                        pronDiv.textContent = line.fullPronunciation ? `[${line.fullPronunciation}]` : "";
-
-                        const korDiv = document.createElement('div');
-                        korDiv.className = 'line-translation';
-                        korDiv.textContent = line.lineTranslation;
-
-                        card.appendChild(japDiv);
-                        card.appendChild(pronDiv);
-                        card.appendChild(korDiv);
-                        resultDiv.appendChild(card);
-                    });
-
-                } catch (e) {
-                    // JSON 변환 실패 시 (즉, "An error occurred..." 같은 텍스트가 왔을 때)
-                    console.error("서버 응답 원본:", responseText);
-                    throw new Error("서버 에러 내용: " + responseText);
-                }
+                    card.appendChild(japDiv);
+                    card.appendChild(pronDiv);
+                    card.appendChild(korDiv);
+                    resultDiv.appendChild(card);
+                });
 
             } catch (e) {
                 console.error(e);
@@ -273,21 +265,25 @@
             }
         }
 
-        // --- 모달 관련 함수 (디자인 복구됨) ---
+        // 모달 관련 함수
         const modal = document.getElementById('learningModal');
         function openModal(token) {
+            if(!modal) return;
+
             document.getElementById('mWord').textContent = token.text;
             document.getElementById('mReading').textContent = token.reading || "";
-            document.getElementById('mMeaning').textContent = token.meaning || "뜻 없음";
-            document.getElementById('mDetail').textContent = token.detail || "";
+            
+            // [수정됨] 뜻(meaning)이 없으면 상세설명(detail)이라도 보여주고, 그것도 없으면 기본 문구 출력
+            document.getElementById('mMeaning').textContent = token.meaning || token.detail || "사전 검색 필요";
+            
+            // 상세설명(detail)은 뜻과 다를 때만 보여줌
+            document.getElementById('mDetail').textContent = (token.meaning && token.detail) ? token.detail : "";
+            
             const dictUrl = `https://ja.dict.naver.com/#/search?query=${encodeURIComponent(token.text)}`;
-            document.getElementById('mDictLink').href = dictUrl;
+            const dictLink = document.getElementById('mDictLink');
+            if(dictLink) dictLink.href = dictUrl;
+            
             modal.classList.add('active');
-        }
-        function closeModal(event) {
-            if (!event || event.target === modal || event.target.className === 'btn-close') {
-                modal.classList.remove('active');
-            }
         }
     </script>
 </body>
