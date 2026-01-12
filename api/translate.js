@@ -24,7 +24,7 @@ export default async function handler(req, res) {
             [요청사항]
             1. "fullPronunciation": 문장 전체의 자연스러운 한국어 발음 (예: 아이시떼루요)
             2. "lineTranslation": **일본어 문장 전체의 자연스러운 한국어 번역** (절대 빠뜨리지 마)
-            3. "tokens": 단어별 배열 (reading은 한국어 발음, meaning은 뜻 채울 것)
+            3. "tokens": 단어별 배열 (text는 일본어 원문, reading은 한국어 발음, meaning은 뜻 채울 것)
             
             [출력 예시]
             [
