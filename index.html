@@ -285,6 +285,11 @@
             
             modal.classList.add('active');
         }
+        function closeModal(event) {
+            if (!event || event.target === modal || event.target.className === 'btn-close') {
+                modal.classList.remove('active');
+            }
+        }
     </script>
 </body>
 </html>
