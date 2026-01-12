@@ -194,7 +194,8 @@
             const btnTrans = document.getElementById('btnTrans');
 
             if (!lyricText && !selectedImageBase64) {
-                alert("가사를 입력하거나 이미지를 업로드해주세요."); return;
+                alert("가사를 입력하거나 이미지를 업로드해주세요."); 
+                return;
             }
 
             resultDiv.innerHTML = "";
@@ -202,7 +203,6 @@
             btnTrans.disabled = true;
 
             try {
-                // [핵심] 내 Vercel 서버 API로 요청 보냄 (키는 서버에 숨겨져 있음)
                 const response = await fetch('/api/translate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -213,48 +213,60 @@
                     })
                 });
 
-                if (!response.ok) {
-                    const errData = await response.json();
-                    throw new Error(errData.error || "서버 오류 발생");
-                }
+                // [수정된 부분] 무조건 JSON으로 변환하지 않고, 텍스트인지 먼저 확인
+                const responseText = await response.text(); 
                 
-                const json = await response.json();
+                try {
+                    // 텍스트를 JSON으로 변환 시도
+                    const json = JSON.parse(responseText);
 
-                // 결과 렌더링 (단어 클릭 기능 포함)
-                json.forEach(line => {
-                    const card = document.createElement('div');
-                    card.className = 'line-card';
+                    if (!response.ok) {
+                        throw new Error(json.error || "서버 오류");
+                    }
 
-                    // 1. 일본어 문장 (클릭 가능 토큰들)
-                    const japDiv = document.createElement('div');
-                    japDiv.className = 'line-japanese';
-                    line.tokens.forEach(token => {
-                        const span = document.createElement('span');
-                        span.className = 'word-token';
-                        span.textContent = token.text;
-                        span.onclick = () => openModal(token); // 클릭 시 모달 열기
-                        japDiv.appendChild(span);
+                    // 변환 성공 시 렌더링
+                    json.forEach(line => {
+                        const card = document.createElement('div');
+                        card.className = 'line-card';
+
+                        const japDiv = document.createElement('div');
+                        japDiv.className = 'line-japanese';
+                        
+                        if (line.tokens && Array.isArray(line.tokens)) {
+                            line.tokens.forEach(token => {
+                                const span = document.createElement('span');
+                                span.className = 'word-token';
+                                span.textContent = token.text;
+                                span.onclick = function() { openModal(token); };
+                                japDiv.appendChild(span);
+                            });
+                        } else {
+                            japDiv.textContent = "텍스트 없음";
+                        }
+
+                        const pronDiv = document.createElement('div');
+                        pronDiv.className = 'line-pronunciation';
+                        pronDiv.textContent = line.fullPronunciation ? `[${line.fullPronunciation}]` : "";
+
+                        const korDiv = document.createElement('div');
+                        korDiv.className = 'line-translation';
+                        korDiv.textContent = line.lineTranslation;
+
+                        card.appendChild(japDiv);
+                        card.appendChild(pronDiv);
+                        card.appendChild(korDiv);
+                        resultDiv.appendChild(card);
                     });
 
-                    // 2. 전체 발음 라인
-                    const pronDiv = document.createElement('div');
-                    pronDiv.className = 'line-pronunciation';
-                    pronDiv.textContent = `[${line.fullPronunciation}]`;
-
-                    // 3. 한국어 번역 라인
-                    const korDiv = document.createElement('div');
-                    korDiv.className = 'line-translation';
-                    korDiv.textContent = line.lineTranslation;
-
-                    card.appendChild(japDiv);
-                    card.appendChild(pronDiv);
-                    card.appendChild(korDiv);
-                    resultDiv.appendChild(card);
-                });
+                } catch (e) {
+                    // JSON 변환 실패 시 (즉, "An error occurred..." 같은 텍스트가 왔을 때)
+                    console.error("서버 응답 원본:", responseText);
+                    throw new Error("서버 에러 내용: " + responseText);
+                }
 
             } catch (e) {
                 console.error(e);
-                alert("오류 발생: " + e.message);
+                alert("오류 발생:\n" + e.message);
             } finally {
                 loading.style.display = "none";
                 btnTrans.disabled = false;
