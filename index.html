@@ -248,7 +248,7 @@
 
                     const korDiv = document.createElement('div');
                     korDiv.className = 'line-translation';
-                    korDiv.textContent = line.lineTranslation;
+                    korDiv.textContent = line.lineTranslation || "번역 없음"; // 데이터가 없으면 '번역 없음'이라도 뜨게 설정
 
                     card.appendChild(japDiv);
                     card.appendChild(pronDiv);

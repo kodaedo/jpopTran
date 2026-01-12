@@ -23,14 +23,17 @@ export default async function handler(req, res) {
             
             [요청사항]
             1. "fullPronunciation": 문장 전체의 자연스러운 한국어 발음 (예: 아이시떼루요)
-            2. "tokens": 문장을 단어별로 쪼갠 배열
-               - "text": 일본어 원문
-               - "reading": 한국어 발음 표기 (예: 와타시)
-               - "meaning": **한국어 뜻 (조사나 문법이라도 '은/는', '주격조사' 등 반드시 내용을 채울 것. 절대 비워두지 마.)**
-               - "detail": 문법적 설명 (짧게)
+            2. "lineTranslation": **일본어 문장 전체의 자연스러운 한국어 번역** (절대 빠뜨리지 마)
+            3. "tokens": 단어별 배열 (reading은 한국어 발음, meaning은 뜻 채울 것)
             
             [출력 예시]
-            [{"fullPronunciation":"...","tokens":[{"text":"は","reading":"와","meaning":"~은/는","detail":"주격조사"}]}]
+            [
+                {
+                    "fullPronunciation": "하지메마시떼",
+                    "lineTranslation": "처음 뵙겠습니다", 
+                    "tokens": [...] 
+                }
+            ]
         `;
         
         if (text) promptText += `\n[텍스트]: ${text}`;
