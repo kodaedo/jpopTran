@@ -2,7 +2,6 @@
 export default async function handler(req, res) {
     // 1. Vercel 환경변수에서 내 키를 몰래 꺼내옵니다.
     const apiKey = process.env.GEMINI_API_KEY; 
-    const testKey = "AIzaSyCAcvexU7Zoj0UyC_K3e5d2DSxeIhlaF8M";
     
     if (!apiKey) {
         return res.status(500).json({ error: "API 키가 설정되지 않았습니다." });
@@ -28,9 +27,8 @@ export default async function handler(req, res) {
 
         // 3. 서버에서 Google API 호출 (사용자는 이 과정을 볼 수 없음)
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-        const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${testKey}`;
         
-        const googleRes = await fetch(testUrl, {
+        const googleRes = await fetch(url, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ contents: [{ parts: parts }] })
