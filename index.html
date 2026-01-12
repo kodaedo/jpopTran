@@ -3,92 +3,149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>J-Lyric Perfect</title>
+    <title>J-Lyric Perfect | Vercel Edition</title>
     <style>
-        /* [이전 코드의 <style> 내용을 여기에 그대로 붙여넣으세요] */
-        /* 편의상 핵심 스타일만 남겨둡니다 */
-        body { font-family: sans-serif; padding: 2rem; max-width: 800px; margin: 0 auto; background: #f7f9fc; }
-        .input-box { background: white; padding: 1.5rem; border-radius: 12px; display: flex; flex-direction: column; gap: 1rem; }
-        textarea { width: 100%; height: 100px; padding: 10px; }
-        button { padding: 10px; background: #4285F4; color: white; border: none; cursor: pointer; border-radius: 8px; }
-        .result-container { margin-top: 20px; }
-        .line-card { background: white; padding: 1rem; margin-bottom: 10px; border-radius: 8px; border-left: 4px solid #34A853; }
-        .line-pronunciation { color: #ea4335; font-style: italic; }
-        /* ...나머지 스타일은 이전과 동일... */
+        /* --- 복구된 전체 디자인 CSS --- */
+        :root {
+            --primary-color: #4285F4;
+            --secondary-color: #34A853;
+            --highlight: #e8f0fe;
+            --bg-color: #f7f9fc;
+            --modal-bg: rgba(0, 0, 0, 0.6);
+            --shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Apple SD Gothic Neo', sans-serif; }
+        body { background-color: var(--bg-color); color: #333; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 2rem; }
+        
+        .container { width: 100%; max-width: 800px; display: flex; flex-direction: column; gap: 1.5rem; }
+        
+        header { text-align: center; margin-bottom: 1rem; }
+        h1 { font-size: 2.2rem; margin-bottom: 0.5rem; color: #333; }
+        p.subtitle { color: #666; }
+
+        /* 입력 섹션 스타일 */
+        .input-box {
+            background: white; padding: 1.5rem; border-radius: 16px;
+            box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 1rem;
+        }
+
+        .file-upload-wrapper {
+            border: 2px dashed #ccc; border-radius: 12px; height: 50px;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            background: #f9f9f9; position: relative; font-weight: bold; color: #666; transition: 0.2s;
+        }
+        .file-upload-wrapper:hover { border-color: var(--primary-color); color: var(--primary-color); background: #e8f0fe; }
+        .file-upload-wrapper input { position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+
+        .preview-area { display: none; width: 100%; border-radius: 8px; overflow: hidden; border: 1px solid #ddd; margin-bottom: 10px; }
+        .preview-area img { width: 100%; display: block; }
+        .preview-area button { width: 100%; padding: 8px; background: #ff5252; color: white; border: none; cursor: pointer; }
+
+        textarea {
+            width: 100%; height: 100px; padding: 1rem; border: 2px solid #eee; border-radius: 12px;
+            resize: vertical; outline: none; font-size: 1rem; transition: 0.2s;
+        }
+        textarea:focus { border-color: var(--primary-color); }
+
+        .main-btn {
+            width: 100%; padding: 14px; background-color: var(--primary-color); color: white;
+            border: none; border-radius: 12px; font-size: 1.1rem; font-weight: bold; cursor: pointer;
+            transition: 0.2s; box-shadow: 0 4px 6px rgba(66, 133, 244, 0.2);
+        }
+        .main-btn:hover { background-color: #3367d6; transform: translateY(-2px); }
+        .main-btn:disabled { background-color: #ccc; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        /* --- 결과 화면 스타일 --- */
+        .result-container { display: flex; flex-direction: column; gap: 1.5rem; }
+        
+        .line-card {
+            background: white; padding: 1.5rem; border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 5px solid var(--secondary-color);
+            animation: fadeIn 0.5s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* 1. 일본어 원문 (클릭 가능 토큰) */
+        .line-japanese {
+            font-size: 1.4rem; font-weight: bold; margin-bottom: 6px; line-height: 1.6;
+            display: flex; flex-wrap: wrap; gap: 4px; 
+        }
+        .word-token {
+            cursor: pointer; padding: 2px 4px; border-radius: 6px; transition: 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+        .word-token:hover {
+            background-color: var(--highlight); color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        /* 2. 전체 발음 줄 */
+        .line-pronunciation {
+            font-size: 1rem; color: #ea4335; margin-bottom: 8px; font-style: italic; font-weight: 500;
+        }
+
+        /* 3. 한국어 번역 줄 */
+        .line-translation { color: #555; font-size: 1rem; padding-top: 8px; border-top: 1px dashed #eee; }
+
+        /* --- 모달 (팝업창) 스타일 복구 --- */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--modal-bg); z-index: 1000; align-items: center; justify-content: center;
+            backdrop-filter: blur(3px);
+        }
+        .modal-overlay.active { display: flex; animation: fadeInModal 0.2s; }
+        
+        .modal-content {
+            background: white; width: 90%; max-width: 400px; padding: 2rem; border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center; position: relative;
+            animation: popUp 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+        }
+        @keyframes popUp { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes fadeInModal { from { opacity: 0; } to { opacity: 1; } }
+
+        .modal-word { font-size: 2.5rem; font-weight: bold; margin-bottom: 0.5rem; color: #333; }
+        .modal-reading { font-size: 1.2rem; color: #ea4335; margin-bottom: 1.5rem; font-weight: bold; }
+        .modal-meaning-box { background: #f1f3f4; padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem; }
+        .modal-meaning { font-size: 1.3rem; color: var(--primary-color); font-weight: bold; margin-bottom: 0.5rem; }
+        .modal-detail { font-size: 0.9rem; color: #666; line-height: 1.4; }
+        
+        .btn-close { position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #aaa; }
+        .btn-dict { background: #03C75A; color: white; padding: 10px 20px; border-radius: 25px; text-decoration: none; font-weight: bold; font-size: 0.9rem; display: inline-block; transition: 0.2s; }
+        .btn-dict:hover { background: #02a349; transform: translateY(-2px); }
+
+        .loading { text-align: center; display: none; color: #666; margin-top: 1rem; }
+        .spinner { display: inline-block; width: 24px; height: 24px; border: 3px solid rgba(66,133,244,0.3); border-radius: 50%; border-top-color: var(--primary-color); animation: spin 1s infinite linear; vertical-align: middle; margin-right: 8px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
-    <h1>J-Lyric Web 🌏</h1>
-    
-    <div class="input-box">
-        <input type="file" id="imageInput" accept="image/*" onchange="handleImageSelect(event)">
-        <div id="previewContainer" style="display:none;"><img id="imagePreview" style="max-width:100%"></div>
-        <textarea id="lyricInput" placeholder="가사를 입력하세요"></textarea>
-        <button id="btnTrans" onclick="startTranslate()">번역하기</button>
+
+    <header>
+        <h1>J-Lyric Perfect 🎤</h1>
+        <p class="subtitle">발음 보며 노래하고, 클릭해서 공부하고! (안전한 Vercel 버전)</p>
+    </header>
+
+    <div class="container">
+        <div class="input-box">
+            <div class="file-upload-wrapper">
+                <span>📷 가사 캡처 업로드 (클릭)</span>
+                <input type="file" id="imageInput" accept="image/*" onchange="handleImageSelect(event)">
+            </div>
+            <div id="previewContainer" class="preview-area">
+                <img id="imagePreview" src="" alt="미리보기">
+                <button onclick="clearImage()">❌ 이미지 삭제</button>
+            </div>
+            <textarea id="lyricInput" placeholder="여기에 일본어 가사를 입력하세요..."></textarea>
+            <button id="btnTrans" class="main-btn" onclick="startTranslate()">분석 시작하기</button>
+        </div>
+
+        <div id="loading" class="loading">
+            <div class="spinner"></div><span>AI가 안전한 서버에서 분석 중입니다... 🎧</span>
+        </div>
+
+        <div id="resultContainer" class="result-container"></div>
     </div>
-    <div id="resultContainer" class="result-container"></div>
 
-    <script>
-        let selectedImageBase64 = null;
-        let selectedImageMimeType = null;
-
-        function handleImageSelect(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                document.getElementById('imagePreview').src = e.target.result;
-                document.getElementById('previewContainer').style.display = 'block';
-                selectedImageBase64 = e.target.result.split(',')[1];
-                selectedImageMimeType = file.type;
-            };
-            reader.readAsDataURL(file);
-        }
-
-        async function startTranslate() {
-            const lyricText = document.getElementById('lyricInput').value.trim();
-            const resultDiv = document.getElementById('resultContainer');
-            const btnTrans = document.getElementById('btnTrans');
-
-            if (!lyricText && !selectedImageBase64) return alert("내용을 입력해주세요.");
-
-            resultDiv.innerHTML = "분석 중...";
-            btnTrans.disabled = true;
-
-            try {
-                // [핵심] API 키 없이, 내 서버(Vercel)로 데이터를 보냅니다.
-                const response = await fetch('/api/translate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        text: lyricText,
-                        image: selectedImageBase64,
-                        mimeType: selectedImageMimeType
-                    })
-                });
-
-                if (!response.ok) throw new Error("서버 오류 발생");
-                
-                const data = await response.json();
-                
-                // 결과 렌더링 (이전과 동일)
-                resultDiv.innerHTML = "";
-                data.forEach(line => {
-                    resultDiv.innerHTML += `
-                        <div class="line-card">
-                            <div>${line.tokens.map(t => `<span onclick="alert('${t.meaning}')" style="cursor:pointer; border-bottom:1px solid #ddd">${t.text}</span>`).join(' ')}</div>
-                            <div class="line-pronunciation">[${line.fullPronunciation}]</div>
-                            <div>${line.lineTranslation}</div>
-                        </div>
-                    `;
-                });
-
-            } catch (e) {
-                alert("에러: " + e.message);
-            } finally {
-                btnTrans.disabled = false;
-            }
-        }
-    </script>
-</body>
-</html>
+    <div id="learningModal" class="modal-overlay" onclick="closeModal(event)">
+        <div
